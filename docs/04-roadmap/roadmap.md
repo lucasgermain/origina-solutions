@@ -39,8 +39,8 @@ Reemplazo de los datos de prueba del módulo de conciliación por la conexión r
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0 | Documentación | Cerrada |
-| 1 | Instalación de herramientas | Manual redactado — pendiente de ejecución |
-| 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | Pendiente |
+| 1 | Instalación de herramientas | Completa (Git, GitHub, VS Code, Docker, Node verificados) |
+| 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | En curso |
 | 3 | CRM + Inventario por SKU | Pendiente |
 | 4 | Remuneraciones + Deuda + Proyección de caja | Pendiente |
 | 5 | Conexión bancaria real (Fintoc) | Pendiente |

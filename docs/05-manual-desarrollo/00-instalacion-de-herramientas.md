@@ -62,7 +62,7 @@ git config --global user.email "el-correo-de-tu-cuenta-de-github@ejemplo.com"
 
 **Checkpoint**: `git --version` muestra un número de versión, no un error.
 
----
+---git
 
 ## Paso 3 — Instalar Visual Studio Code
 
