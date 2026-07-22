@@ -1,3 +1,4 @@
+// Nota: este servidor es la primera versión del módulo de conciliación bancaria.
 const http = require('http');
 const url = require('url');
 const { Pool } = require('pg');
