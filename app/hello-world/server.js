@@ -1,6 +1,6 @@
-// Nota: este servidor es la primera versión del módulo de conciliación bancaria.
 const http = require('http');
 const url = require('url');
+const querystring = require('querystring');
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -23,6 +23,15 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id SERIAL PRIMARY KEY,
+      rut TEXT NOT NULL,
+      nombre TEXT NOT NULL,
+      centro_costo TEXT NOT NULL
+    );
+  `);
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM movimientos_bancarios');
   const yaTieneDatos = Number(rows[0].count) > 0;
 
@@ -36,6 +45,19 @@ async function prepararBaseDeDatos() {
     `);
     console.log('Datos de prueba insertados.');
   }
+}
+
+function leerCuerpo(peticion) {
+  return new Promise((resolve, reject) => {
+    let datos = '';
+    peticion.on('data', (fragmento) => {
+      datos += fragmento;
+    });
+    peticion.on('end', () => {
+      resolve(querystring.parse(datos));
+    });
+    peticion.on('error', reject);
+  });
 }
 
 function construirSelector(centroCostoActual) {
@@ -56,7 +78,7 @@ function construirSelector(centroCostoActual) {
   `;
 }
 
-function construirTabla(lista) {
+function construirTablaMovimientos(lista) {
   const filas = lista.map((m) => `
     <tr>
       <td>${m.fecha.toISOString().slice(0, 10)}</td>
@@ -75,10 +97,63 @@ function construirTabla(lista) {
   `;
 }
 
+function construirPaginaClientes(lista) {
+  const filas = lista.map((c) => `
+    <tr>
+      <td>${c.rut}</td>
+      <td>${c.nombre}</td>
+      <td>${c.centro_costo}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <html>
+      <body>
+        <h1>Clientes</h1>
+        <p><a href="/">Volver a movimientos bancarios</a></p>
+        <form method="POST" action="/clientes">
+          <label>RUT: <input type="text" name="rut" required></label>
+          <label>Nombre: <input type="text" name="nombre" required></label>
+          <label>Centro de costo:
+            <select name="centroCosto">
+              <option>Providencia</option>
+              <option>Ñuñoa</option>
+            </select>
+          </label>
+          <button type="submit">Agregar cliente</button>
+        </form>
+        <table border="1" cellpadding="6">
+          <tr><th>RUT</th><th>Nombre</th><th>Centro de costo</th></tr>
+          ${filas}
+        </table>
+      </body>
+    </html>
+  `;
+}
+
 const servidor = http.createServer(async (peticion, respuesta) => {
   const partesUrl = url.parse(peticion.url, true);
-  const centroCostoElegido = partesUrl.query.centroCosto || 'Todos';
+  const ruta = partesUrl.pathname;
 
+  if (ruta === '/clientes' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpo(peticion);
+    await pool.query(
+      'INSERT INTO clientes (rut, nombre, centro_costo) VALUES ($1, $2, $3)',
+      [cuerpo.rut, cuerpo.nombre, cuerpo.centroCosto]
+    );
+    respuesta.writeHead(302, { Location: '/clientes' });
+    respuesta.end();
+    return;
+  }
+
+  if (ruta === '/clientes') {
+    const resultado = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
+    respuesta.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    respuesta.end(construirPaginaClientes(resultado.rows));
+    return;
+  }
+
+  const centroCostoElegido = partesUrl.query.centroCosto || 'Todos';
   let resultado;
   if (centroCostoElegido === 'Todos') {
     resultado = await pool.query('SELECT * FROM movimientos_bancarios ORDER BY fecha DESC');
@@ -94,8 +169,9 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     <html>
       <body>
         <h1>Movimientos bancarios por centro de costo</h1>
+        <p><a href="/clientes">Ir a Clientes</a></p>
         ${construirSelector(centroCostoElegido)}
-        ${construirTabla(resultado.rows)}
+        ${construirTablaMovimientos(resultado.rows)}
       </body>
     </html>
   `);
