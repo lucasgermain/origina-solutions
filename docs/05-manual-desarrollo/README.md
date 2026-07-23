@@ -20,5 +20,5 @@
 3. [Documentos de venta](./09-documentos-de-venta.md) — llave foránea, JOIN. **Listo.**
 4. [Introducción a React](./10-introduccion-react.md) — API en JSON, CORS, primera pantalla en React. **Listo.**
 5. [Inventario por SKU](./11-inventario-sku.md) — kardex básico, PMP. **Listo.**
-6. Costeo y margen.
+6. [Costeo y margen](./12-costeo-y-margen.md) — venta cruzada con costo del SKU, margen. **Listo.**
 7. Cierre de fase.

@@ -33,7 +33,7 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 3. **Documentos de venta**: tabla `documento_venta`, primero con datos de prueba, después conectada al proveedor elegido.
 4. ~~**Introducción a React**~~ — Hecho: API de Clientes convertida a JSON con CORS, y primera pantalla real en React (`app/frontend`) reemplazando el HTML generado por el servidor. Desde este capítulo el código lo escribe y corre el CTO directamente ([ADR-008](../01-arquitectura/decisiones-tecnicas-ADR.md)). El dashboard ejecutivo (Pantalla 1) se deja para cuando haya datos reales de venta/gasto/deuda que mostrar.
 5. ~~**Inventario por SKU**~~ — Hecho: tablas `sku` y `movimientos_inventario`, stock calculado desde el historial de movimientos, costo promedio (PMP) recalculado en cada entrada. Pantalla nueva en React (`app/frontend/src/paginas/Inventario.jsx`).
-6. **Costeo y margen**: cruzar venta con costo del SKU vendido.
+6. ~~**Costeo y margen**~~ — Hecho: la venta se puede ligar a un SKU, congelando su costo promedio (PMP) al momento de la venta y calculando el margen; registrar la venta también descuenta el stock automáticamente. Pantalla `Ventas` migrada a React.
 7. **Cierre de fase**.
 
 ## Fase 4 — V3: Remuneraciones, deuda y proyección de caja

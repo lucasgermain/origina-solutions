@@ -65,6 +65,13 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  // Columnas agregadas después (Fase 3, capítulo 6): vinculan una venta con el
+  // SKU vendido, para poder calcular el margen. Nullable porque las ventas
+  // registradas antes de este capítulo no tienen esta información.
+  await pool.query(`ALTER TABLE documentos_venta ADD COLUMN IF NOT EXISTS sku_id INTEGER REFERENCES sku(id);`);
+  await pool.query(`ALTER TABLE documentos_venta ADD COLUMN IF NOT EXISTS cantidad NUMERIC(12,2);`);
+  await pool.query(`ALTER TABLE documentos_venta ADD COLUMN IF NOT EXISTS costo_unitario NUMERIC(14,2);`);
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM movimientos_bancarios');
   const yaTieneDatos = Number(rows[0].count) > 0;
 
@@ -150,6 +157,34 @@ async function calcularStock(skuId) {
     [skuId]
   );
   return Number(resultado.rows[0].stock);
+}
+
+async function registrarVenta(cuerpo) {
+  const { clienteId, centroCosto, tipoDte, monto, skuId, cantidad } = cuerpo;
+
+  // Si la venta lleva un SKU, "congelamos" el costo promedio vigente en ese
+  // instante como costo_unitario de esta venta. Así el margen de una venta
+  // vieja no cambia si el costo promedio del SKU sigue moviéndose después.
+  let costoUnitario = null;
+  if (skuId) {
+    const sku = await pool.query('SELECT costo_promedio FROM sku WHERE id = $1', [skuId]);
+    costoUnitario = sku.rows[0].costo_promedio;
+  }
+
+  const resultado = await pool.query(
+    `INSERT INTO documentos_venta (cliente_id, centro_costo, tipo_dte, monto, sku_id, cantidad, costo_unitario)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [clienteId, centroCosto, tipoDte, monto, skuId || null, cantidad || null, costoUnitario]
+  );
+
+  // La venta de un SKU también es una salida de inventario: se registra
+  // aparte para que el stock (calculado desde movimientos_inventario) quede
+  // al día automáticamente.
+  if (skuId) {
+    await registrarMovimientoInventario({ skuId, centroCosto, tipo: 'salida', cantidad });
+  }
+
+  return resultado.rows[0];
 }
 
 function aplicarCORS(respuesta) {
@@ -344,6 +379,35 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     await registrarMovimientoInventario(cuerpo);
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (ruta === '/api/ventas' && peticion.method === 'GET') {
+    const resultado = await pool.query(`
+      SELECT
+        documentos_venta.*,
+        clientes.nombre AS cliente_nombre,
+        sku.codigo AS sku_codigo,
+        CASE
+          WHEN documentos_venta.sku_id IS NOT NULL
+            THEN documentos_venta.monto - (documentos_venta.cantidad * documentos_venta.costo_unitario)
+          ELSE NULL
+        END AS margen
+      FROM documentos_venta
+      JOIN clientes ON clientes.id = documentos_venta.cliente_id
+      LEFT JOIN sku ON sku.id = documentos_venta.sku_id
+      ORDER BY documentos_venta.id DESC
+    `);
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/ventas' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const venta = await registrarVenta(cuerpo);
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(venta));
     return;
   }
 
