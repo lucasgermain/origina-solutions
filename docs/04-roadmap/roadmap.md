@@ -46,7 +46,7 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 2. ~~**Remuneraciones**~~ — Hecho: tablas `empleados` y `liquidaciones`, pantalla en React con registro por periodo y marcado manual de pago.
 3. ~~**Deuda y leasing**~~ — Hecho: tablas `deudas_leasing` y `cuotas_deuda`; al registrar una deuda se genera automáticamente la tabla de amortización completa (sistema francés, cuota fija).
 4. ~~**Proyección de caja**~~ — Hecho: cruza movimientos bancarios, facturas por cobrar, cuotas de deuda y liquidaciones pendientes, con alerta si el saldo proyectado se pone negativo. Sin cuentas por pagar a proveedores todavía (módulo no construido).
-5. **Cierre de fase**.
+5. ~~**Cierre de fase**~~ — Hecho: ver [cierre de la Fase 4](../05-manual-desarrollo/17-cierre-de-fase.md).
 
 ## Fase 5 — Conexión bancaria real (Fintoc)
 
@@ -60,5 +60,5 @@ Reemplazo de los datos de prueba del módulo de conciliación por la conexión r
 | 1 | Instalación de herramientas | Completa (Git, GitHub, VS Code, Docker, Node verificados) |
 | 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | Completa |
 | 3 | CRM + Inventario por SKU | Completa |
-| 4 | Remuneraciones + Deuda + Proyección de caja | Próxima |
-| 5 | Conexión bancaria real (Fintoc) | Pendiente |
+| 4 | Remuneraciones + Deuda + Proyección de caja | Completa |
+| 5 | Conexión bancaria real (Fintoc) | Próxima |

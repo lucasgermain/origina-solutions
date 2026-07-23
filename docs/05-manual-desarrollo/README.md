@@ -31,4 +31,6 @@
 2. [Módulo Remuneraciones](./14-remuneraciones.md) — empleados, liquidaciones, estado de pago. **Listo.**
 3. [Deuda y leasing](./15-deuda-y-leasing.md) — tabla de amortización (sistema francés). **Listo.**
 4. [Proyección de caja](./16-proyeccion-de-caja.md) — motor de proyección a 60-90 días con alertas. **Listo.**
-5. Cierre de fase.
+5. [Cierre de fase](./17-cierre-de-fase.md) — qué falta antes de la Fase 5, y qué sigue. **Listo.**
+
+**Fase 4 completa.**
