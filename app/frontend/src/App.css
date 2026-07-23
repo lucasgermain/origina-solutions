@@ -1,3 +1,25 @@
+.nav {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 1rem 0 0;
+  font-family: system-ui, sans-serif;
+}
+
+.nav button {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #d4d4d8;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nav button.activo {
+  background: #18181b;
+  color: white;
+  border-color: #18181b;
+}
+
 .pagina {
   max-width: 720px;
   margin: 0 auto;

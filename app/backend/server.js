@@ -44,6 +44,27 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sku (
+      id SERIAL PRIMARY KEY,
+      codigo TEXT NOT NULL UNIQUE,
+      descripcion TEXT NOT NULL,
+      costo_promedio NUMERIC(14,2) NOT NULL DEFAULT 0
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS movimientos_inventario (
+      id SERIAL PRIMARY KEY,
+      sku_id INTEGER NOT NULL REFERENCES sku(id),
+      centro_costo TEXT NOT NULL,
+      tipo TEXT NOT NULL CHECK (tipo IN ('entrada', 'salida', 'merma', 'traspaso')),
+      cantidad NUMERIC(12,2) NOT NULL,
+      costo_unitario NUMERIC(14,2),
+      fecha DATE NOT NULL DEFAULT CURRENT_DATE
+    );
+  `);
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM movimientos_bancarios');
   const yaTieneDatos = Number(rows[0].count) > 0;
 
@@ -81,6 +102,54 @@ function leerCuerpoJSON(peticion) {
     });
     peticion.on('error', reject);
   });
+}
+
+async function registrarMovimientoInventario(cuerpo) {
+  const { skuId, centroCosto, tipo, cantidad, costoUnitario } = cuerpo;
+
+  // Guardamos el movimiento tal cual llegó.
+  await pool.query(
+    'INSERT INTO movimientos_inventario (sku_id, centro_costo, tipo, cantidad, costo_unitario) VALUES ($1, $2, $3, $4, $5)',
+    [skuId, centroCosto, tipo, cantidad, tipo === 'entrada' ? costoUnitario : null]
+  );
+
+  // Solo una "entrada" (compra de stock) cambia el costo promedio del SKU.
+  // Es el Precio Medio Ponderado (PMP): se pondera el costo que ya tenía el
+  // stock existente con el costo de lo que acaba de entrar.
+  if (tipo === 'entrada') {
+    const sku = await pool.query('SELECT costo_promedio FROM sku WHERE id = $1', [skuId]);
+    const stockActual = await calcularStock(skuId);
+    const costoPromedioActual = Number(sku.rows[0].costo_promedio);
+    const cantidadEntrada = Number(cantidad);
+    const costoEntrada = Number(costoUnitario);
+
+    const stockAntesDeEsteMovimiento = stockActual - cantidadEntrada;
+    const nuevoPmp =
+      stockAntesDeEsteMovimiento > 0
+        ? (stockAntesDeEsteMovimiento * costoPromedioActual + cantidadEntrada * costoEntrada) /
+          stockActual
+        : costoEntrada;
+
+    await pool.query('UPDATE sku SET costo_promedio = $1 WHERE id = $2', [nuevoPmp, skuId]);
+  }
+}
+
+async function calcularStock(skuId) {
+  const resultado = await pool.query(
+    `
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN tipo = 'entrada' THEN cantidad
+          WHEN tipo IN ('salida', 'merma') THEN -cantidad
+          ELSE 0
+        END
+      ), 0) AS stock
+      FROM movimientos_inventario
+      WHERE sku_id = $1
+    `,
+    [skuId]
+  );
+  return Number(resultado.rows[0].stock);
 }
 
 function aplicarCORS(respuesta) {
@@ -237,6 +306,44 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     );
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify(resultado.rows[0]));
+    return;
+  }
+
+  if (ruta === '/api/skus' && peticion.method === 'GET') {
+    const resultado = await pool.query(`
+      SELECT sku.*, COALESCE(SUM(
+        CASE
+          WHEN mi.tipo = 'entrada' THEN mi.cantidad
+          WHEN mi.tipo IN ('salida', 'merma') THEN -mi.cantidad
+          ELSE 0
+        END
+      ), 0) AS stock
+      FROM sku
+      LEFT JOIN movimientos_inventario mi ON mi.sku_id = sku.id
+      GROUP BY sku.id
+      ORDER BY sku.codigo
+    `);
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/skus' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const resultado = await pool.query(
+      'INSERT INTO sku (codigo, descripcion) VALUES ($1, $2) RETURNING *',
+      [cuerpo.codigo, cuerpo.descripcion]
+    );
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
+    return;
+  }
+
+  if (ruta === '/api/movimientos-inventario' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    await registrarMovimientoInventario(cuerpo);
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify({ ok: true }));
     return;
   }
 
