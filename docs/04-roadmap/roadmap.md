@@ -40,6 +40,14 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 
 Integración con BUK/Talana, módulo de deuda y leasing con tabla de amortización, y motor de proyección de caja a 60-90 días con alertas de necesidad de financiamiento. Cierra las preguntas 5 ("¿cuánto puedo retirar?") y 6 ("¿voy a necesitar financiamiento?").
 
+Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la Fase 3):
+
+1. ~~**Proveedor de nómina**~~ — Hecho: se eligió **Talana** ([ADR-009](../01-arquitectura/decisiones-tecnicas-ADR.md); BUK quedó como alternativa, descartada por no tener un ambiente sandbox documentado públicamente).
+2. ~~**Remuneraciones**~~ — Hecho: tablas `empleados` y `liquidaciones`, pantalla en React con registro por periodo y marcado manual de pago.
+3. **Deuda y leasing**: tablas `deuda_leasing` y `cuota_deuda`, con tabla de amortización.
+4. **Proyección de caja**: cruza movimientos bancarios, cuentas por cobrar/pagar, cuotas de deuda y liquidaciones pendientes, para proyectar el saldo a 60-90 días con alertas.
+5. **Cierre de fase**.
+
 ## Fase 5 — Conexión bancaria real (Fintoc)
 
 Reemplazo de los datos de prueba del módulo de conciliación por la conexión real vía Fintoc ([ADR-001](../01-arquitectura/decisiones-tecnicas-ADR.md)), una vez que el resto del sistema ya está probado con datos controlados. Se deja para el final a propósito: es más fácil depurar errores de lógica de negocio con datos de prueba predecibles que con datos bancarios reales desde el día uno.

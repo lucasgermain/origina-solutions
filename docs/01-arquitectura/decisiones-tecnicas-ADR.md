@@ -121,6 +121,34 @@ Al momento de decidir (julio 2026), se confirmó que **BaseAPI discontinuó el s
 
 ---
 
+## ADR-009 — Proveedor de nómina (API de remuneraciones): Talana
+
+**Estado**: Aceptado
+
+**Contexto**: La Fase 4 necesita un proveedor de API para leer datos de remuneraciones (liquidaciones por periodo, empleado y centro de costo) y alimentar el módulo de Remuneraciones. En la arquitectura original ([arquitectura-tecnica.md](./arquitectura-tecnica.md)) se dejaron abiertas dos opciones equivalentes: BUK y Talana, ambas con API REST propia y usadas ampliamente en Chile.
+
+Al momento de decidir (julio 2026), ambas plataformas siguen activas y con API vigente:
+- **BUK**: API Restful, credenciales vía Configuración → Acceso API dentro de la cuenta contratada, más de 30 integraciones con socios (Oracle, Chipax, LinkedIn, etc.). El precio de la plataforma se calcula por colaborador vigente registrado.
+- **Talana**: portal de desarrolladores dedicado (developers.talana.com) con documentación, ejemplos, y **ambiente sandbox** para probar y validar integraciones antes de tocar datos reales. Ya se usa en integraciones existentes con ERPs contables (Laudus, SAP) y sistemas de gasto (Rindegastos).
+
+Ninguna de las dos publica una tabla de precios específica para el acceso a la API (ambas requieren contacto comercial para credenciales de integración) — en eso quedan parejas.
+
+**Decisión**: Se usará **Talana** como proveedor de API de remuneraciones.
+
+**Por qué**:
+- Tiene un **portal de desarrolladores separado**, con documentación pública y explícita para integraciones (a diferencia de BUK, donde el API Key se genera dentro de la cuenta de producción de la empresa).
+- Ofrece un **ambiente sandbox** para probar la integración con datos de prueba antes de conectar datos reales de sueldos — coherente con el criterio ya usado para Fintoc (Fase 5) y SimpleAPI (Fase 3): probar la lógica de negocio con datos controlados antes de tocar información sensible real.
+- Ya está probada en integraciones con herramientas del mismo tipo que las que este proyecto va a necesitar más adelante (ERP contable, gasto).
+
+**Alternativas consideradas**:
+- **BUK**: plataforma sólida y con más integraciones publicadas, pero su API se administra desde dentro de la cuenta de producción (sin un ambiente de pruebas dedicado y documentado públicamente), lo que la hace menos práctica para desarrollar y aprender antes de tener datos reales de nómina.
+
+**Consecuencias**: Se necesitan credenciales de ambiente sandbox de Talana (se solicitan directo a su equipo de soporte) para desarrollar la Fase 4 con datos de prueba. **Antes de pasar a producción con sueldos reales, hay que cotizar el plan pago real** — igual que quedó pendiente con SimpleAPI, es una decisión de negocio, no técnica, para cuando se acerque ese momento. Dado que los datos de remuneraciones son especialmente sensibles, esa conexión real debe esperar a que el módulo de autenticación/roles (pendiente señalado en el [cierre de la Fase 3](../05-manual-desarrollo/13-cierre-de-fase.md)) exista.
+
+Fuentes consultadas: [Buk — precios](https://www.buk.cl/precios), [Preguntas frecuentes de Buk](https://www.buk.co/preguntas-frecuentes-buk), [Portal de Desarrolladores Talana](https://developers.talana.com/docs/getting-started), [Integra Talana a tu Ecosistema](https://developers.talana.com/docs/integra-talana-a-tu-ecosistema).
+
+---
+
 ## Plantilla para nuevos ADRs
 
 ```

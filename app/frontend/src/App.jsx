@@ -3,38 +3,32 @@ import './App.css';
 import Clientes from './paginas/Clientes';
 import Inventario from './paginas/Inventario';
 import Ventas from './paginas/Ventas';
+import Remuneraciones from './paginas/Remuneraciones';
 
-const PANTALLAS = {
-  clientes: Clientes,
-  ventas: Ventas,
-  inventario: Inventario,
-};
+const PANTALLAS = [
+  { clave: 'clientes', etiqueta: 'Clientes', componente: Clientes },
+  { clave: 'ventas', etiqueta: 'Ventas', componente: Ventas },
+  { clave: 'inventario', etiqueta: 'Inventario', componente: Inventario },
+  { clave: 'remuneraciones', etiqueta: 'Remuneraciones', componente: Remuneraciones },
+];
 
 function App() {
   const [pantalla, setPantalla] = useState('clientes');
-  const Pantalla = PANTALLAS[pantalla];
+  const activa = PANTALLAS.find((p) => p.clave === pantalla);
+  const Pantalla = activa.componente;
 
   return (
     <div>
       <nav className="nav">
-        <button
-          className={pantalla === 'clientes' ? 'activo' : ''}
-          onClick={() => setPantalla('clientes')}
-        >
-          Clientes
-        </button>
-        <button
-          className={pantalla === 'ventas' ? 'activo' : ''}
-          onClick={() => setPantalla('ventas')}
-        >
-          Ventas
-        </button>
-        <button
-          className={pantalla === 'inventario' ? 'activo' : ''}
-          onClick={() => setPantalla('inventario')}
-        >
-          Inventario
-        </button>
+        {PANTALLAS.map((p) => (
+          <button
+            key={p.clave}
+            className={pantalla === p.clave ? 'activo' : ''}
+            onClick={() => setPantalla(p.clave)}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
       </nav>
 
       <Pantalla />

@@ -24,3 +24,11 @@
 7. [Cierre de fase](./13-cierre-de-fase.md) — qué falta antes de la Fase 4, y qué sigue. **Listo.**
 
 **Fase 3 completa.**
+
+## Fase 4
+
+1. Proveedor de nómina — Talana ([ADR-009](../01-arquitectura/decisiones-tecnicas-ADR.md)). **Listo.**
+2. [Módulo Remuneraciones](./14-remuneraciones.md) — empleados, liquidaciones, estado de pago. **Listo.**
+3. Deuda y leasing.
+4. Proyección de caja.
+5. Cierre de fase.

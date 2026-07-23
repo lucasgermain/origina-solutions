@@ -65,6 +65,28 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS empleados (
+      id SERIAL PRIMARY KEY,
+      rut TEXT NOT NULL,
+      nombre TEXT NOT NULL,
+      cargo TEXT NOT NULL,
+      centro_costo TEXT NOT NULL
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS liquidaciones (
+      id SERIAL PRIMARY KEY,
+      empleado_id INTEGER NOT NULL REFERENCES empleados(id),
+      periodo TEXT NOT NULL,
+      sueldo_liquido NUMERIC(14,2) NOT NULL,
+      sueldo_imponible NUMERIC(14,2) NOT NULL,
+      cotizaciones NUMERIC(14,2) NOT NULL,
+      estado_pago TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado_pago IN ('pendiente', 'pagado'))
+    );
+  `);
+
   // Columnas agregadas después (Fase 3, capítulo 6): vinculan una venta con el
   // SKU vendido, para poder calcular el margen. Nullable porque las ventas
   // registradas antes de este capítulo no tienen esta información.
@@ -379,6 +401,59 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     await registrarMovimientoInventario(cuerpo);
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (ruta === '/api/empleados' && peticion.method === 'GET') {
+    const resultado = await pool.query('SELECT * FROM empleados ORDER BY nombre');
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/empleados' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const resultado = await pool.query(
+      'INSERT INTO empleados (rut, nombre, cargo, centro_costo) VALUES ($1, $2, $3, $4) RETURNING *',
+      [cuerpo.rut, cuerpo.nombre, cuerpo.cargo, cuerpo.centroCosto]
+    );
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
+    return;
+  }
+
+  if (ruta === '/api/liquidaciones' && peticion.method === 'GET') {
+    const resultado = await pool.query(`
+      SELECT liquidaciones.*, empleados.nombre AS empleado_nombre, empleados.centro_costo
+      FROM liquidaciones
+      JOIN empleados ON empleados.id = liquidaciones.empleado_id
+      ORDER BY liquidaciones.periodo DESC, empleados.nombre
+    `);
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/liquidaciones' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const resultado = await pool.query(
+      `INSERT INTO liquidaciones (empleado_id, periodo, sueldo_liquido, sueldo_imponible, cotizaciones)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [cuerpo.empleadoId, cuerpo.periodo, cuerpo.sueldoLiquido, cuerpo.sueldoImponible, cuerpo.cotizaciones]
+    );
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
+    return;
+  }
+
+  if (ruta.match(/^\/api\/liquidaciones\/\d+\/pagar$/) && peticion.method === 'POST') {
+    const id = ruta.split('/')[3];
+    const resultado = await pool.query(
+      "UPDATE liquidaciones SET estado_pago = 'pagado' WHERE id = $1 RETURNING *",
+      [id]
+    );
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
     return;
   }
 
