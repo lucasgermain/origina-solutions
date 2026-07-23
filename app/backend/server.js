@@ -87,6 +87,31 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS deudas_leasing (
+      id SERIAL PRIMARY KEY,
+      centro_costo TEXT,
+      tipo TEXT NOT NULL CHECK (tipo IN ('credito_comercial', 'linea_credito', 'leasing_financiero', 'leasing_operativo', 'factoring')),
+      acreedor TEXT NOT NULL,
+      monto_original NUMERIC(14,2) NOT NULL,
+      tasa_interes NUMERIC(6,4) NOT NULL,
+      plazo_meses INTEGER NOT NULL,
+      fecha_inicio DATE NOT NULL DEFAULT CURRENT_DATE
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cuotas_deuda (
+      id SERIAL PRIMARY KEY,
+      deuda_leasing_id INTEGER NOT NULL REFERENCES deudas_leasing(id),
+      numero_cuota INTEGER NOT NULL,
+      fecha_vencimiento DATE NOT NULL,
+      capital NUMERIC(14,2) NOT NULL,
+      interes NUMERIC(14,2) NOT NULL,
+      estado_pago TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado_pago IN ('pendiente', 'pagado'))
+    );
+  `);
+
   // Columnas agregadas después (Fase 3, capítulo 6): vinculan una venta con el
   // SKU vendido, para poder calcular el margen. Nullable porque las ventas
   // registradas antes de este capítulo no tienen esta información.
@@ -207,6 +232,51 @@ async function registrarVenta(cuerpo) {
   }
 
   return resultado.rows[0];
+}
+
+async function registrarDeuda(cuerpo) {
+  const { centroCosto, tipo, acreedor, montoOriginal, tasaInteres, plazoMeses, fechaInicio } = cuerpo;
+
+  const deuda = await pool.query(
+    `INSERT INTO deudas_leasing (centro_costo, tipo, acreedor, monto_original, tasa_interes, plazo_meses, fecha_inicio)
+     VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, CURRENT_DATE)) RETURNING *`,
+    [centroCosto || null, tipo, acreedor, montoOriginal, tasaInteres, plazoMeses, fechaInicio || null]
+  );
+
+  await generarTablaDeAmortizacion(deuda.rows[0]);
+
+  return deuda.rows[0];
+}
+
+// Sistema francés: la cuota (capital + interés) es siempre el mismo monto;
+// lo que cambia mes a mes es cuánto de esa cuota es interés (baja con el
+// tiempo) y cuánto es capital (sube con el tiempo), porque el interés se
+// calcula sobre el saldo que va quedando.
+async function generarTablaDeAmortizacion(deuda) {
+  const monto = Number(deuda.monto_original);
+  const tasa = Number(deuda.tasa_interes); // tasa mensual, ej. 0.015 = 1,5%
+  const plazo = Number(deuda.plazo_meses);
+  const fechaInicio = new Date(deuda.fecha_inicio);
+
+  const cuotaFija =
+    tasa > 0 ? (monto * tasa) / (1 - Math.pow(1 + tasa, -plazo)) : monto / plazo;
+
+  let saldoPendiente = monto;
+
+  for (let numero = 1; numero <= plazo; numero++) {
+    const interes = saldoPendiente * tasa;
+    const capital = cuotaFija - interes;
+    saldoPendiente -= capital;
+
+    const fechaVencimiento = new Date(fechaInicio);
+    fechaVencimiento.setMonth(fechaVencimiento.getMonth() + numero);
+
+    await pool.query(
+      `INSERT INTO cuotas_deuda (deuda_leasing_id, numero_cuota, fecha_vencimiento, capital, interes)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [deuda.id, numero, fechaVencimiento.toISOString().slice(0, 10), capital, interes]
+    );
+  }
 }
 
 function aplicarCORS(respuesta) {
@@ -401,6 +471,61 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     await registrarMovimientoInventario(cuerpo);
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (ruta === '/api/deudas' && peticion.method === 'GET') {
+    const resultado = await pool.query(`
+      SELECT
+        deudas_leasing.*,
+        COALESCE(SUM(cuotas_deuda.capital) FILTER (WHERE cuotas_deuda.estado_pago = 'pendiente'), 0) AS saldo_pendiente,
+        MIN(cuotas_deuda.fecha_vencimiento) FILTER (WHERE cuotas_deuda.estado_pago = 'pendiente') AS proxima_cuota
+      FROM deudas_leasing
+      LEFT JOIN cuotas_deuda ON cuotas_deuda.deuda_leasing_id = deudas_leasing.id
+      GROUP BY deudas_leasing.id
+      ORDER BY deudas_leasing.fecha_inicio DESC
+    `);
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/deudas' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const deuda = await registrarDeuda(cuerpo);
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(deuda));
+    return;
+  }
+
+  const matchCuotas = ruta.match(/^\/api\/deudas\/(\d+)\/cuotas$/);
+  if (matchCuotas && peticion.method === 'GET') {
+    const resultado = await pool.query(
+      `
+        SELECT *,
+          CASE
+            WHEN estado_pago = 'pendiente' AND fecha_vencimiento < CURRENT_DATE THEN 'vencido'
+            ELSE estado_pago
+          END AS estado_mostrado
+        FROM cuotas_deuda
+        WHERE deuda_leasing_id = $1
+        ORDER BY numero_cuota
+      `,
+      [matchCuotas[1]]
+    );
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta.match(/^\/api\/cuotas\/\d+\/pagar$/) && peticion.method === 'POST') {
+    const id = ruta.split('/')[3];
+    const resultado = await pool.query(
+      "UPDATE cuotas_deuda SET estado_pago = 'pagado' WHERE id = $1 RETURNING *",
+      [id]
+    );
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
     return;
   }
 

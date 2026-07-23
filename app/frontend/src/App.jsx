@@ -4,12 +4,14 @@ import Clientes from './paginas/Clientes';
 import Inventario from './paginas/Inventario';
 import Ventas from './paginas/Ventas';
 import Remuneraciones from './paginas/Remuneraciones';
+import Deuda from './paginas/Deuda';
 
 const PANTALLAS = [
   { clave: 'clientes', etiqueta: 'Clientes', componente: Clientes },
   { clave: 'ventas', etiqueta: 'Ventas', componente: Ventas },
   { clave: 'inventario', etiqueta: 'Inventario', componente: Inventario },
   { clave: 'remuneraciones', etiqueta: 'Remuneraciones', componente: Remuneraciones },
+  { clave: 'deuda', etiqueta: 'Deuda', componente: Deuda },
 ];
 
 function App() {

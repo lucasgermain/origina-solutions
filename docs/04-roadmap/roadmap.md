@@ -44,7 +44,7 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 
 1. ~~**Proveedor de nómina**~~ — Hecho: se eligió **Talana** ([ADR-009](../01-arquitectura/decisiones-tecnicas-ADR.md); BUK quedó como alternativa, descartada por no tener un ambiente sandbox documentado públicamente).
 2. ~~**Remuneraciones**~~ — Hecho: tablas `empleados` y `liquidaciones`, pantalla en React con registro por periodo y marcado manual de pago.
-3. **Deuda y leasing**: tablas `deuda_leasing` y `cuota_deuda`, con tabla de amortización.
+3. ~~**Deuda y leasing**~~ — Hecho: tablas `deudas_leasing` y `cuotas_deuda`; al registrar una deuda se genera automáticamente la tabla de amortización completa (sistema francés, cuota fija).
 4. **Proyección de caja**: cruza movimientos bancarios, cuentas por cobrar/pagar, cuotas de deuda y liquidaciones pendientes, para proyectar el saldo a 60-90 días con alertas.
 5. **Cierre de fase**.
 
