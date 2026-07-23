@@ -5,6 +5,7 @@ import Inventario from './paginas/Inventario';
 import Ventas from './paginas/Ventas';
 import Remuneraciones from './paginas/Remuneraciones';
 import Deuda from './paginas/Deuda';
+import ProyeccionCaja from './paginas/ProyeccionCaja';
 
 const PANTALLAS = [
   { clave: 'clientes', etiqueta: 'Clientes', componente: Clientes },
@@ -12,6 +13,7 @@ const PANTALLAS = [
   { clave: 'inventario', etiqueta: 'Inventario', componente: Inventario },
   { clave: 'remuneraciones', etiqueta: 'Remuneraciones', componente: Remuneraciones },
   { clave: 'deuda', etiqueta: 'Deuda', componente: Deuda },
+  { clave: 'proyeccion', etiqueta: 'Proyección de caja', componente: ProyeccionCaja },
 ];
 
 function App() {

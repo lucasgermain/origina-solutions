@@ -158,6 +158,107 @@ function leerCuerpoJSON(peticion) {
   });
 }
 
+function sumarDias(fecha, dias) {
+  const nueva = new Date(fecha);
+  nueva.setDate(nueva.getDate() + dias);
+  return nueva;
+}
+
+function ultimoDiaDelPeriodo(periodo) {
+  // periodo viene como "AAAA-MM". El día 0 del mes siguiente es el último
+  // día del mes actual — es un truco estándar del objeto Date de JS.
+  const [anio, mes] = periodo.split('-').map(Number);
+  return new Date(anio, mes, 0);
+}
+
+function aFechaCorta(fecha) {
+  return fecha.toISOString().slice(0, 10);
+}
+
+// Cruza cuatro fuentes de datos —saldo bancario, facturas por cobrar, cuotas
+// de deuda y liquidaciones pendientes— para proyectar el saldo día a día y
+// avisar si en algún punto del horizonte la caja se pondría en rojo.
+async function calcularProyeccionCaja(dias) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const horizonte = sumarDias(hoy, dias);
+
+  const saldoResultado = await pool.query('SELECT COALESCE(SUM(monto), 0) AS saldo FROM movimientos_bancarios');
+  const saldoActual = Number(saldoResultado.rows[0].saldo);
+
+  const eventos = [];
+
+  // Facturas pendientes de cobro: se asume un plazo de pago a 30 días desde
+  // la emisión (término comercial típico en Chile). Las boletas se tratan
+  // como cobradas al contado y no entran a la proyección.
+  const ventas = await pool.query(`
+    SELECT documentos_venta.*, clientes.nombre AS cliente_nombre
+    FROM documentos_venta
+    JOIN clientes ON clientes.id = documentos_venta.cliente_id
+    WHERE tipo_dte = 'factura'
+  `);
+  for (const venta of ventas.rows) {
+    const fechaCobro = sumarDias(venta.fecha_emision, 30);
+    if (fechaCobro >= hoy && fechaCobro <= horizonte) {
+      eventos.push({
+        fecha: fechaCobro,
+        concepto: `Cobro factura #${venta.id} — ${venta.cliente_nombre}`,
+        monto: Number(venta.monto),
+      });
+    }
+  }
+
+  // Cuotas de deuda pendientes dentro del horizonte.
+  const cuotas = await pool.query(`
+    SELECT cuotas_deuda.*, deudas_leasing.acreedor
+    FROM cuotas_deuda
+    JOIN deudas_leasing ON deudas_leasing.id = cuotas_deuda.deuda_leasing_id
+    WHERE estado_pago = 'pendiente'
+      AND fecha_vencimiento BETWEEN $1 AND $2
+  `, [aFechaCorta(hoy), aFechaCorta(horizonte)]);
+  for (const cuota of cuotas.rows) {
+    eventos.push({
+      fecha: new Date(cuota.fecha_vencimiento),
+      concepto: `Cuota ${cuota.numero_cuota} — ${cuota.acreedor}`,
+      monto: -(Number(cuota.capital) + Number(cuota.interes)),
+    });
+  }
+
+  // Liquidaciones pendientes: se asume que el sueldo se paga el último día
+  // del mes del periodo liquidado.
+  const liquidaciones = await pool.query(`
+    SELECT liquidaciones.*, empleados.nombre AS empleado_nombre
+    FROM liquidaciones
+    JOIN empleados ON empleados.id = liquidaciones.empleado_id
+    WHERE estado_pago = 'pendiente'
+  `);
+  for (const liquidacion of liquidaciones.rows) {
+    const fechaPago = ultimoDiaDelPeriodo(liquidacion.periodo);
+    if (fechaPago >= hoy && fechaPago <= horizonte) {
+      eventos.push({
+        fecha: fechaPago,
+        concepto: `Sueldo — ${liquidacion.empleado_nombre}`,
+        monto: -Number(liquidacion.sueldo_liquido),
+      });
+    }
+  }
+
+  eventos.sort((a, b) => a.fecha - b.fecha);
+
+  let saldo = saldoActual;
+  let alerta = null;
+  for (const evento of eventos) {
+    saldo += evento.monto;
+    evento.saldoProyectado = saldo;
+    evento.fecha = aFechaCorta(evento.fecha);
+    if (saldo < 0 && !alerta) {
+      alerta = { fecha: evento.fecha, saldoProyectado: saldo };
+    }
+  }
+
+  return { saldoActual, horizonteDias: dias, eventos, alerta };
+}
+
 async function registrarMovimientoInventario(cuerpo) {
   const { skuId, centroCosto, tipo, cantidad, costoUnitario } = cuerpo;
 
@@ -471,6 +572,14 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     await registrarMovimientoInventario(cuerpo);
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (ruta === '/api/proyeccion-caja' && peticion.method === 'GET') {
+    const dias = Number(partesUrl.query.dias) || 90;
+    const proyeccion = await calcularProyeccionCaja(dias);
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(proyeccion));
     return;
   }
 
