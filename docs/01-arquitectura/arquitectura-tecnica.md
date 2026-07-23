@@ -60,7 +60,7 @@ La decisión arquitectónica central del sistema es que **cada transacción — 
 
 ## 3.2 Módulo de clientes — Ventas y CRM
 
-- **Ingesta de ventas**: vía integración con el emisor de DTE (boletas y facturas electrónicas). En Chile este dato no nace en un ERP propio sino que debe timbrarse ante el SII; existen múltiples proveedores de API DTE (BaseAPI, SimpleAPI, Factronica, Tupana, entre otros) que permiten emitir y también leer el Registro de Compras y Ventas (RCV) directamente desde el SII, lo que sirve como fuente de verdad y como respaldo si la empresa ya emite en otro sistema.
+- **Ingesta de ventas**: vía integración con el emisor de DTE (boletas y facturas electrónicas). En Chile este dato no nace en un ERP propio sino que debe timbrarse ante el SII; se usa **SimpleAPI** ([ADR-007](./decisiones-tecnicas-ADR.md)) para emitir y también leer el Registro de Compras y Ventas (RCV) directamente desde el SII, lo que sirve como fuente de verdad y como respaldo si la empresa ya emite en otro sistema.
 - **CRM**: pipeline comercial (prospecto → cotización → venta), historial de compra por cliente, cliente por sucursal/vendedor, y — clave para la pregunta "qué negocio genera caja" — **días promedio de cobro real por cliente**, cruzando la fecha de la factura con la fecha en que efectivamente se concilió el pago bancario (no la fecha contable).
 - **Métricas por sucursal**: ticket promedio, mix de productos, margen bruto por venta (cruzando con costo del SKU vendido), recaudación efectiva vs. facturado.
 
@@ -112,7 +112,7 @@ Justificación detallada de cada elección en [decisiones-tecnicas-ADR.md](./dec
 | Integración | Proveedor(es) | Qué entrega | Notas de implementación |
 |---|---|---|---|
 | Conexión bancaria multibanco | Fintoc (principal); alternativa de referencia: modelo Chipax | Saldos y movimientos por cuenta, multi-banco | Requiere autorización del cliente final por cuenta bancaria; refresco periódico + webhooks cuando estén disponibles |
-| Facturación electrónica / RCV | BaseAPI, SimpleAPI, Factronica, Tupana (u otro proveedor de API DTE del SII) | Emisión y lectura de boletas/facturas, Registro de Compras y Ventas | Puede usarse solo como fuente de lectura (RCV) si la empresa ya emite en otro sistema, o como emisor si se integra completo |
+| Facturación electrónica / RCV | SimpleAPI ([ADR-007](./decisiones-tecnicas-ADR.md)) | Emisión y lectura de boletas/facturas, Registro de Compras y Ventas | Puede usarse solo como fuente de lectura (RCV) si la empresa ya emite en otro sistema, o como emisor si se integra completo |
 | Remuneraciones | BUK (API Key vía Configuración → Acceso API) y Talana (developers.talana.com) | Liquidaciones por periodo, empleado y centro de costo | Definir en el token si se autoriza lectura de datos sensibles (sueldo); sincronización por periodo cerrado |
 | Deuda y leasing | Carga manual / planilla inicial; API bancaria del mismo agregador para saldos de línea de crédito si el banco la expone | Saldo y tabla de amortización | Partir con carga manual es razonable para MVP; automatizar según lo que exponga cada banco |
 

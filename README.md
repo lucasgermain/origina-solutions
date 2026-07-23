@@ -32,8 +32,8 @@ Este proyecto se construye con una metodología de **documentación antes que c�
 - [Roadmap](docs/04-roadmap/roadmap.md) — fases del proyecto, desde esta documentación hasta la conexión bancaria real.
 
 ### 05 — Manual de desarrollo
-- [Instalación de herramientas](docs/05-manual-desarrollo/00-instalacion-de-herramientas.md) — guía paso a paso para dejar Git, GitHub, VS Code, Docker y Node funcionando desde cero.
+- [Índice del manual de desarrollo](docs/05-manual-desarrollo/README.md) — instalación de herramientas, fundamentos, y los 7 capítulos del primer producto funcionando (movimientos bancarios por centro de costo, con persistencia real en PostgreSQL).
 
 ## Estado actual
 
-Fase 0 (Documentación) cerrada. Fase 1 (Manual de instalación) redactada — pendiente que el fundador la siga e instale las herramientas en su computador. Ver el detalle de qué falta y qué sigue en el [roadmap](docs/04-roadmap/roadmap.md).
+Fase 0 (Documentación) y Fase 1 (Instalación de herramientas) cerradas. **Fase 2 (primer producto funcionando) completa**: servidor Node + PostgreSQL corriendo, con movimientos bancarios de prueba filtrables por centro de costo, todo documentado capítulo a capítulo y en Git. Próximo: Fase 3 (CRM + Inventario por SKU). Ver el detalle en el [roadmap](docs/04-roadmap/roadmap.md).

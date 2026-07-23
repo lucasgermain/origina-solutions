@@ -84,6 +84,31 @@ Un ADR (Architecture Decision Record) es un registro corto de una decisión téc
 
 ---
 
+## ADR-007 — Proveedor de facturación electrónica (API DTE/RCV): SimpleAPI
+
+**Estado**: Aceptado
+
+**Contexto**: Se necesita un proveedor de API que permita leer el Registro de Compras y Ventas (RCV) y, más adelante, emitir DTE, para alimentar el módulo de Clientes/CRM de la Fase 3. En la arquitectura original ([arquitectura-tecnica.md](./arquitectura-tecnica.md)) se habían listado varias opciones sin comprometerse a una: BaseAPI, SimpleAPI, Factronica, Tupana.
+
+Al momento de decidir (julio 2026), se confirmó que **BaseAPI discontinuó el servicio**: dejó de aceptar clientes nuevos y cierra por completo el 11 de diciembre de 2026, según su propio sitio. Queda descartada de inmediato, independiente de sus méritos técnicos.
+
+**Decisión**: Se usará **SimpleAPI** (de Chilesystems, la misma empresa detrás de SimpleFactura) como proveedor de API DTE/RCV.
+
+**Por qué**:
+- Integra directo contra los webservices del SII, sin depender de un tercero adicional en el medio.
+- Tiene documentación pública (documentacion.simplefactura.cl) y un repositorio de ejemplo en GitHub (`chilesystems/samples-dte`) — buena señal para una integración guiada paso a paso.
+- Ofrece un nivel gratuito (con límite de consultas mensuales) suficiente para desarrollo y aprendizaje antes de comprometerse a un plan pago.
+- Cubre tanto DTE (emisión/timbre/firma) como Folios (CAF), que es lo que vamos a necesitar según vayamos avanzando en la Fase 3.
+
+**Alternativas consideradas**:
+- **BaseAPI**: descartada por cierre anunciado del servicio.
+- **Factronica**: ofrece modalidad SaaS y standalone, pero el trial es de solo 5 días y no se encontró tabla de precios pública clara — más difícil de evaluar sin contacto comercial directo.
+- **Tupana**: se investigó menos en detalle; queda como alternativa de respaldo si SimpleAPI no cubre algo que necesitemos más adelante.
+
+**Consecuencias**: Los planes de SimpleAPI son anuales, cotizados en UF + IVA, pagados de una vez. Para el desarrollo y aprendizaje de la Fase 3 basta el nivel gratuito; **antes de pasar a producción con datos reales de un cliente, hay que revisar el plan pago y su costo real** — eso queda pendiente como decisión de negocio, no técnica, cuando se acerque ese momento.
+
+---
+
 ## Plantilla para nuevos ADRs
 
 ```

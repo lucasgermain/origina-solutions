@@ -26,6 +26,16 @@ Al cerrar esta fase, el sistema ya resuelve, aunque sea con datos de prueba, las
 
 Conexión real a un proveedor de API DTE/RCV (ver [integraciones](../01-arquitectura/arquitectura-tecnica.md)), módulo de CRM completo, inventario por SKU y costeo. Habilita responder con datos reales las preguntas 2 ("¿dónde se pierde el dinero?") y 4 ("¿qué gastos puedo reducir?"), porque ya existe margen real por producto y cliente.
 
+Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la Fase 2):
+
+1. ~~**Proveedor de facturación electrónica**~~ — Hecho: se eligió **SimpleAPI** ([ADR-007](../01-arquitectura/decisiones-tecnicas-ADR.md); BaseAPI quedó descartada por cierre del servicio).
+2. **Clientes**: tabla `cliente` real en Postgres, con un formulario simple para crearlos.
+3. **Documentos de venta**: tabla `documento_venta`, primero con datos de prueba, después conectada al proveedor elegido.
+4. **Introducción a React**: se migra del HTML generado por el servidor a una aplicación de verdad ([ADR-002](../01-arquitectura/decisiones-tecnicas-ADR.md)), aprovechando que ya hay una pantalla con más interacción (crear/editar cliente) que lo justifica. Acá es donde entra el diseño visual serio del producto — el dashboard ejecutivo (Pantalla 1) se deja para cuando haya datos reales de venta/gasto/deuda que mostrar.
+5. **Inventario por SKU**: tabla `sku` y `movimiento_inventario`, kardex básico.
+6. **Costeo y margen**: cruzar venta con costo del SKU vendido.
+7. **Cierre de fase**.
+
 ## Fase 4 — V3: Remuneraciones, deuda y proyección de caja
 
 Integración con BUK/Talana, módulo de deuda y leasing con tabla de amortización, y motor de proyección de caja a 60-90 días con alertas de necesidad de financiamiento. Cierra las preguntas 5 ("¿cuánto puedo retirar?") y 6 ("¿voy a necesitar financiamiento?").
@@ -40,7 +50,7 @@ Reemplazo de los datos de prueba del módulo de conciliación por la conexión r
 |---|---|---|
 | 0 | Documentación | Cerrada |
 | 1 | Instalación de herramientas | Completa (Git, GitHub, VS Code, Docker, Node verificados) |
-| 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | En curso |
-| 3 | CRM + Inventario por SKU | Pendiente |
+| 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | Completa |
+| 3 | CRM + Inventario por SKU | Próxima |
 | 4 | Remuneraciones + Deuda + Proyección de caja | Pendiente |
 | 5 | Conexión bancaria real (Fintoc) | Pendiente |
