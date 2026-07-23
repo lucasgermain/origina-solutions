@@ -38,4 +38,6 @@
 ## Fase 5
 
 1. [Conexión real a Fintoc](./18-conexion-fintoc.md) — credenciales en `.env`, sincronización de movimientos (sandbox), asignación de centro de costo. **Listo.**
-2. Cierre de fase.
+2. [Cierre de fase](./19-cierre-de-fase.md) — cierre del roadmap original completo, qué sigue. **Listo.**
+
+**Fase 5 completa. Roadmap original completo.**

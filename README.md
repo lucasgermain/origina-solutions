@@ -32,8 +32,8 @@ Este proyecto se construye con una metodología de **documentación antes que c�
 - [Roadmap](docs/04-roadmap/roadmap.md) — fases del proyecto, desde esta documentación hasta la conexión bancaria real.
 
 ### 05 — Manual de desarrollo
-- [Índice del manual de desarrollo](docs/05-manual-desarrollo/README.md) — instalación de herramientas, fundamentos, y los capítulos de las Fases 2 a 4 (primer producto funcionando, CRM/Inventario/React, Remuneraciones/Deuda/Proyección de caja).
+- [Índice del manual de desarrollo](docs/05-manual-desarrollo/README.md) — instalación de herramientas, fundamentos, y los capítulos de las Fases 2 a 5 (primer producto funcionando, CRM/Inventario/React, Remuneraciones/Deuda/Proyección de caja, conexión bancaria real).
 
 ## Estado actual
 
-Fase 0 (Documentación), Fase 1 (Instalación de herramientas), Fase 2 (primer producto funcionando) y Fase 3 (CRM + Inventario por SKU) cerradas. **Fase 4 (Remuneraciones + Deuda + Proyección de caja) completa**: la aplicación en React ya tiene 6 pantallas (Clientes, Ventas, Inventario, Remuneraciones, Deuda, Proyección de caja); esta última cruza bancos, ventas, deuda y remuneraciones para avisar con fecha exacta si el saldo se pondría negativo. Todo documentado capítulo a capítulo y en Git. Próximo: Fase 5 (conexión bancaria real vía Fintoc). Ver el detalle en el [roadmap](docs/04-roadmap/roadmap.md).
+**Roadmap original completo (Fases 0 a 5).** La aplicación en React tiene 7 pantallas (Bancos, Clientes, Ventas, Inventario, Remuneraciones, Deuda, Proyección de caja) sobre una API propia en Node + PostgreSQL, con una conexión externa real funcionando (Fintoc, en modo sandbox) y dos más elegidas y pendientes de conectar (SimpleAPI, Talana). Todo documentado capítulo a capítulo y en Git. Los próximos pasos (autenticación y roles, dashboard ejecutivo, módulo de proveedores) ya no vienen de un roadmap predefinido — quedan como decisiones de producto nuevas, detalladas en el [cierre de la Fase 5](docs/05-manual-desarrollo/19-cierre-de-fase.md). Ver el detalle completo en el [roadmap](docs/04-roadmap/roadmap.md).

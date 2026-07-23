@@ -52,8 +52,8 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 
 Reemplazo de los datos de prueba del módulo de conciliación por la conexión real vía Fintoc ([ADR-001](../01-arquitectura/decisiones-tecnicas-ADR.md)), una vez que el resto del sistema ya está probado con datos controlados. Se deja para el final a propósito: es más fácil depurar errores de lógica de negocio con datos de prueba predecibles que con datos bancarios reales desde el día uno.
 
-1. ~~**Conexión real a Fintoc**~~ — Hecho: credenciales movidas a `.env` (Postgres y Fintoc), sincronización de movimientos vía el SDK oficial contra el **sandbox** de Fintoc (no un banco real todavía), asignación manual de centro de costo para movimientos recién sincronizados. Ver [capítulo del manual](../05-manual-desarrollo/18-conexion-fintoc.md).
-2. **Cierre de fase**.
+1. ~~**Conexión real a Fintoc**~~ — Hecho: credenciales movidas a `.env` (Postgres y Fintoc), sincronización de movimientos vía llamadas directas a la API REST de Fintoc contra el **sandbox** (no un banco real todavía; se abandonó el SDK oficial por un bug de paginación), asignación manual de centro de costo para movimientos recién sincronizados. Ver [capítulo del manual](../05-manual-desarrollo/18-conexion-fintoc.md).
+2. ~~**Cierre de fase**~~ — Hecho: ver [cierre de la Fase 5](../05-manual-desarrollo/19-cierre-de-fase.md).
 
 ## Resumen de estado
 
@@ -64,4 +64,6 @@ Reemplazo de los datos de prueba del módulo de conciliación por la conexión r
 | 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | Completa |
 | 3 | CRM + Inventario por SKU | Completa |
 | 4 | Remuneraciones + Deuda + Proyección de caja | Completa |
-| 5 | Conexión bancaria real (Fintoc) | Próxima |
+| 5 | Conexión bancaria real (Fintoc, sandbox) | Completa |
+
+**Roadmap original (Fases 0–5) completo.** Ver [cierre de la Fase 5](../05-manual-desarrollo/19-cierre-de-fase.md) para qué sigue.
