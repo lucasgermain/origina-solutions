@@ -109,6 +109,18 @@ Al momento de decidir (julio 2026), se confirmó que **BaseAPI discontinuó el s
 
 ---
 
+## ADR-008 — Modalidad de aprendizaje: se reemplaza ADR-005, el CTO escribe y corre el código directamente
+
+**Estado**: Aceptado (reemplaza [ADR-005](#adr-005--modalidad-de-aprendizaje-el-fundador-escribe-el-código-guiado-línea-a-línea))
+
+**Contexto**: Bajo ADR-005, el fundador escribía cada línea de código en VS Code, guiado por el CTO. Al llegar a la introducción de React (Fase 3, capítulo 4), el fundador preguntó explícitamente si el CTO podía encargarse de escribir y correr el código directamente de ahí en adelante.
+
+**Decisión**: De aquí en adelante, el CTO escribe y prueba el código directamente (usando acceso a archivos y terminal), en vez de dictarlo línea por línea para que el fundador lo escriba a mano. El fundador sigue a cargo de las decisiones de producto, de correr los comandos que dependen de su máquina (Docker, `npm run dev`, `node server.js`, `git push`), y de validar cada resultado en su navegador antes de avanzar.
+
+**Consecuencias**: El avance es más rápido, pero el fundador deja de practicar la mecánica de escribir y depurar código a mano. Cada capítulo del manual de desarrollo sigue documentando **qué se construyó y por qué**, para que el fundador mantenga trazabilidad y entendimiento del sistema aunque no haya tipeado cada línea. Si en algún punto el fundador quiere retomar el modo línea a línea (por ejemplo, para un módulo que le interese aprender en detalle), puede pedirlo para ese capítulo específico.
+
+---
+
 ## Plantilla para nuevos ADRs
 
 ```

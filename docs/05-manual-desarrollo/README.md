@@ -11,4 +11,14 @@
 7. [Hábitos de equipo](./06-habitos-de-equipo.md) — ramas de Git. **Listo.**
 8. [Cierre de fase](./07-cierre-de-fase.md) — qué falta antes de conectar el banco real, y qué sigue. **Listo.**
 
-**Fase 2 completa.** Ver [roadmap](../04-roadmap/roadmap.md) para la Fase 3.
+**Fase 2 completa.**
+
+## Fase 3
+
+1. Proveedor de facturación electrónica — SimpleAPI ([ADR-007](../01-arquitectura/decisiones-tecnicas-ADR.md)). **Listo.**
+2. [Módulo Clientes](./08-modulo-clientes.md) — ruteo por pathname/method, formularios POST. **Listo.**
+3. [Documentos de venta](./09-documentos-de-venta.md) — llave foránea, JOIN. **Listo.**
+4. [Introducción a React](./10-introduccion-react.md) — API en JSON, CORS, primera pantalla en React. **Listo.**
+5. Inventario por SKU.
+6. Costeo y margen.
+7. Cierre de fase.

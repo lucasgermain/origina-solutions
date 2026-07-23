@@ -62,14 +62,31 @@ async function prepararBaseDeDatos() {
 function leerCuerpo(peticion) {
   return new Promise((resolve, reject) => {
     let datos = '';
-    peticion.on('data', (fragmento) => {
-      datos += fragmento;
-    });
+    peticion.on('data', (fragmento) => { datos += fragmento; });
+    peticion.on('end', () => { resolve(querystring.parse(datos)); });
+    peticion.on('error', reject);
+  });
+}
+
+function leerCuerpoJSON(peticion) {
+  return new Promise((resolve, reject) => {
+    let datos = '';
+    peticion.on('data', (fragmento) => { datos += fragmento; });
     peticion.on('end', () => {
-      resolve(querystring.parse(datos));
+      try {
+        resolve(datos ? JSON.parse(datos) : {});
+      } catch (error) {
+        reject(error);
+      }
     });
     peticion.on('error', reject);
   });
+}
+
+function aplicarCORS(respuesta) {
+  respuesta.setHeader('Access-Control-Allow-Origin', '*');
+  respuesta.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  respuesta.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 function construirSelector(centroCostoActual) {
@@ -196,6 +213,32 @@ function construirPaginaVentas(lista, clientes) {
 const servidor = http.createServer(async (peticion, respuesta) => {
   const partesUrl = url.parse(peticion.url, true);
   const ruta = partesUrl.pathname;
+
+  aplicarCORS(respuesta);
+
+  if (peticion.method === 'OPTIONS') {
+    respuesta.writeHead(204);
+    respuesta.end();
+    return;
+  }
+
+  if (ruta === '/api/clientes' && peticion.method === 'GET') {
+    const resultado = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/clientes' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const resultado = await pool.query(
+      'INSERT INTO clientes (rut, nombre, centro_costo) VALUES ($1, $2, $3) RETURNING *',
+      [cuerpo.rut, cuerpo.nombre, cuerpo.centroCosto]
+    );
+    respuesta.writeHead(201, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
+    return;
+  }
 
   if (ruta === '/ventas' && peticion.method === 'POST') {
     const cuerpo = await leerCuerpo(peticion);
