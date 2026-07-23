@@ -32,6 +32,18 @@ async function prepararBaseDeDatos() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS documentos_venta (
+      id SERIAL PRIMARY KEY,
+      cliente_id INTEGER NOT NULL REFERENCES clientes(id),
+      centro_costo TEXT NOT NULL,
+      tipo_dte TEXT NOT NULL,
+      monto INTEGER NOT NULL,
+      fecha_emision DATE NOT NULL DEFAULT CURRENT_DATE,
+      estado_cobro TEXT NOT NULL DEFAULT 'facturado'
+    );
+  `);
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM movimientos_bancarios');
   const yaTieneDatos = Number(rows[0].count) > 0;
 
@@ -110,7 +122,7 @@ function construirPaginaClientes(lista) {
     <html>
       <body>
         <h1>Clientes</h1>
-        <p><a href="/">Volver a movimientos bancarios</a></p>
+        <p><a href="/">Movimientos bancarios</a> | <a href="/ventas">Ventas</a></p>
         <form method="POST" action="/clientes">
           <label>RUT: <input type="text" name="rut" required></label>
           <label>Nombre: <input type="text" name="nombre" required></label>
@@ -131,9 +143,83 @@ function construirPaginaClientes(lista) {
   `;
 }
 
+function construirPaginaVentas(lista, clientes) {
+  const opcionesClientes = clientes.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  const filas = lista.map((v) => `
+    <tr>
+      <td>${v.cliente_nombre}</td>
+      <td>${v.tipo_dte}</td>
+      <td>${v.monto}</td>
+      <td>${v.fecha_emision.toISOString().slice(0, 10)}</td>
+      <td>${v.centro_costo}</td>
+      <td>${v.estado_cobro}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <html>
+      <body>
+        <h1>Documentos de venta</h1>
+        <p><a href="/">Movimientos bancarios</a> | <a href="/clientes">Clientes</a></p>
+        <form method="POST" action="/ventas">
+          <label>Cliente:
+            <select name="clienteId" required>
+              <option value="">-- elegir --</option>
+              ${opcionesClientes}
+            </select>
+          </label>
+          <label>Tipo:
+            <select name="tipoDte">
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+            </select>
+          </label>
+          <label>Monto: <input type="number" name="monto" required></label>
+          <label>Centro de costo:
+            <select name="centroCosto">
+              <option>Providencia</option>
+              <option>Ñuñoa</option>
+            </select>
+          </label>
+          <button type="submit">Registrar venta</button>
+        </form>
+        <table border="1" cellpadding="6">
+          <tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Fecha</th><th>Centro de costo</th><th>Estado cobro</th></tr>
+          ${filas}
+        </table>
+      </body>
+    </html>
+  `;
+}
+
 const servidor = http.createServer(async (peticion, respuesta) => {
   const partesUrl = url.parse(peticion.url, true);
   const ruta = partesUrl.pathname;
+
+  if (ruta === '/ventas' && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpo(peticion);
+    await pool.query(
+      'INSERT INTO documentos_venta (cliente_id, centro_costo, tipo_dte, monto) VALUES ($1, $2, $3, $4)',
+      [cuerpo.clienteId, cuerpo.centroCosto, cuerpo.tipoDte, cuerpo.monto]
+    );
+    respuesta.writeHead(302, { Location: '/ventas' });
+    respuesta.end();
+    return;
+  }
+
+  if (ruta === '/ventas') {
+    const clientes = await pool.query('SELECT * FROM clientes ORDER BY nombre');
+    const ventas = await pool.query(`
+      SELECT documentos_venta.*, clientes.nombre AS cliente_nombre
+      FROM documentos_venta
+      JOIN clientes ON clientes.id = documentos_venta.cliente_id
+      ORDER BY documentos_venta.id DESC
+    `);
+    respuesta.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    respuesta.end(construirPaginaVentas(ventas.rows, clientes.rows));
+    return;
+  }
 
   if (ruta === '/clientes' && peticion.method === 'POST') {
     const cuerpo = await leerCuerpo(peticion);
@@ -169,7 +255,7 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     <html>
       <body>
         <h1>Movimientos bancarios por centro de costo</h1>
-        <p><a href="/clientes">Ir a Clientes</a></p>
+        <p><a href="/clientes">Clientes</a> | <a href="/ventas">Ventas</a></p>
         ${construirSelector(centroCostoElegido)}
         ${construirTablaMovimientos(resultado.rows)}
       </body>
