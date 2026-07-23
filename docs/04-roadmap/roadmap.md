@@ -34,7 +34,7 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 4. ~~**Introducción a React**~~ — Hecho: API de Clientes convertida a JSON con CORS, y primera pantalla real en React (`app/frontend`) reemplazando el HTML generado por el servidor. Desde este capítulo el código lo escribe y corre el CTO directamente ([ADR-008](../01-arquitectura/decisiones-tecnicas-ADR.md)). El dashboard ejecutivo (Pantalla 1) se deja para cuando haya datos reales de venta/gasto/deuda que mostrar.
 5. ~~**Inventario por SKU**~~ — Hecho: tablas `sku` y `movimientos_inventario`, stock calculado desde el historial de movimientos, costo promedio (PMP) recalculado en cada entrada. Pantalla nueva en React (`app/frontend/src/paginas/Inventario.jsx`).
 6. ~~**Costeo y margen**~~ — Hecho: la venta se puede ligar a un SKU, congelando su costo promedio (PMP) al momento de la venta y calculando el margen; registrar la venta también descuenta el stock automáticamente. Pantalla `Ventas` migrada a React.
-7. **Cierre de fase**.
+7. ~~**Cierre de fase**~~ — Hecho: ver [cierre de la Fase 3](../05-manual-desarrollo/13-cierre-de-fase.md).
 
 ## Fase 4 — V3: Remuneraciones, deuda y proyección de caja
 
@@ -51,6 +51,6 @@ Reemplazo de los datos de prueba del módulo de conciliación por la conexión r
 | 0 | Documentación | Cerrada |
 | 1 | Instalación de herramientas | Completa (Git, GitHub, VS Code, Docker, Node verificados) |
 | 2 | Primer producto funcionando (banco + centro de costo, datos de prueba) | Completa |
-| 3 | CRM + Inventario por SKU | Próxima |
-| 4 | Remuneraciones + Deuda + Proyección de caja | Pendiente |
+| 3 | CRM + Inventario por SKU | Completa |
+| 4 | Remuneraciones + Deuda + Proyección de caja | Próxima |
 | 5 | Conexión bancaria real (Fintoc) | Pendiente |

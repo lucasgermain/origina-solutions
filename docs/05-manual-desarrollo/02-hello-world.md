@@ -4,7 +4,7 @@
 
 ## Qué se construyó
 
-Un servidor HTTP mínimo en JavaScript puro (sin frameworks, sin dependencias externas), que responde con un texto fijo. Código en [`app/hello-world/server.js`](../../app/hello-world/server.js).
+Un servidor HTTP mínimo en JavaScript puro (sin frameworks, sin dependencias externas), que responde con un texto fijo. En ese momento vivía en `app/hello-world/server.js`; la carpeta se renombró más adelante a `app/backend` (ver [Introducción a React](./10-introduccion-react.md)) — hoy ese código es [`app/backend/server.js`](../../app/backend/server.js).
 
 ```js
 const http = require('http');

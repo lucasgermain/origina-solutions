@@ -32,8 +32,8 @@ Este proyecto se construye con una metodología de **documentación antes que c�
 - [Roadmap](docs/04-roadmap/roadmap.md) — fases del proyecto, desde esta documentación hasta la conexión bancaria real.
 
 ### 05 — Manual de desarrollo
-- [Índice del manual de desarrollo](docs/05-manual-desarrollo/README.md) — instalación de herramientas, fundamentos, y los 7 capítulos del primer producto funcionando (movimientos bancarios por centro de costo, con persistencia real en PostgreSQL).
+- [Índice del manual de desarrollo](docs/05-manual-desarrollo/README.md) — instalación de herramientas, fundamentos, los 7 capítulos del primer producto funcionando (Fase 2), y los 7 capítulos de CRM/Inventario/React (Fase 3).
 
 ## Estado actual
 
-Fase 0 (Documentación) y Fase 1 (Instalación de herramientas) cerradas. **Fase 2 (primer producto funcionando) completa**: servidor Node + PostgreSQL corriendo, con movimientos bancarios de prueba filtrables por centro de costo, todo documentado capítulo a capítulo y en Git. Próximo: Fase 3 (CRM + Inventario por SKU). Ver el detalle en el [roadmap](docs/04-roadmap/roadmap.md).
+Fase 0 (Documentación), Fase 1 (Instalación de herramientas) y Fase 2 (primer producto funcionando) cerradas. **Fase 3 (CRM + Inventario por SKU) completa**: aplicación separada en backend (Node + PostgreSQL, API en JSON) y frontend (React), con pantallas de Clientes, Ventas e Inventario; las ventas se pueden ligar a un SKU para calcular margen real y descontar stock automáticamente. Todo documentado capítulo a capítulo y en Git. Próximo: Fase 4 (Remuneraciones + Deuda + Proyección de caja). Ver el detalle en el [roadmap](docs/04-roadmap/roadmap.md).
