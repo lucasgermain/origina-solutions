@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import Bancos from './paginas/Bancos';
 import Clientes from './paginas/Clientes';
 import Inventario from './paginas/Inventario';
 import Ventas from './paginas/Ventas';
@@ -8,6 +9,7 @@ import Deuda from './paginas/Deuda';
 import ProyeccionCaja from './paginas/ProyeccionCaja';
 
 const PANTALLAS = [
+  { clave: 'bancos', etiqueta: 'Bancos', componente: Bancos },
   { clave: 'clientes', etiqueta: 'Clientes', componente: Clientes },
   { clave: 'ventas', etiqueta: 'Ventas', componente: Ventas },
   { clave: 'inventario', etiqueta: 'Inventario', componente: Inventario },

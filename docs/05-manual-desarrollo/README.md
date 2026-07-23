@@ -34,3 +34,8 @@
 5. [Cierre de fase](./17-cierre-de-fase.md) — qué falta antes de la Fase 5, y qué sigue. **Listo.**
 
 **Fase 4 completa.**
+
+## Fase 5
+
+1. [Conexión real a Fintoc](./18-conexion-fintoc.md) — credenciales en `.env`, sincronización de movimientos (sandbox), asignación de centro de costo. **Listo.**
+2. Cierre de fase.

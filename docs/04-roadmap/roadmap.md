@@ -52,6 +52,9 @@ Capítulos planeados (a confirmar/ajustar al empezar cada uno, igual que en la F
 
 Reemplazo de los datos de prueba del módulo de conciliación por la conexión real vía Fintoc ([ADR-001](../01-arquitectura/decisiones-tecnicas-ADR.md)), una vez que el resto del sistema ya está probado con datos controlados. Se deja para el final a propósito: es más fácil depurar errores de lógica de negocio con datos de prueba predecibles que con datos bancarios reales desde el día uno.
 
+1. ~~**Conexión real a Fintoc**~~ — Hecho: credenciales movidas a `.env` (Postgres y Fintoc), sincronización de movimientos vía el SDK oficial contra el **sandbox** de Fintoc (no un banco real todavía), asignación manual de centro de costo para movimientos recién sincronizados. Ver [capítulo del manual](../05-manual-desarrollo/18-conexion-fintoc.md).
+2. **Cierre de fase**.
+
 ## Resumen de estado
 
 | Fase | Contenido | Estado |

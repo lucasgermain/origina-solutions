@@ -1,15 +1,58 @@
+require('dotenv').config();
+
 const http = require('http');
 const url = require('url');
 const querystring = require('querystring');
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 
+// Por defecto, `pg` convierte las columnas DATE a objetos Date de
+// JavaScript, y al pasarlas por JSON.stringify (nuestras rutas /api/...)
+// terminan mostrando fecha y hora ("2026-07-23T00:00:00.000Z") en vez de
+// solo la fecha. Como esta app nunca guarda hora en columnas DATE, le
+// pedimos a `pg` que las devuelva tal cual (el texto "2026-07-23" que ya
+// entrega Postgres), sin convertir. OID 1082 = tipo "date" de Postgres.
+types.setTypeParser(1082, (valor) => valor);
+
+// Las credenciales ya no están escritas acá — se leen desde app/backend/.env
+// (que nunca se sube a git). Los valores después de "||" son solo un
+// respaldo para que el proyecto siga funcionando si alguien no tiene el
+// archivo .env todavía.
 const pool = new Pool({
-  host: 'localhost',
-  port: 5432,
-  user: 'centrocontrol',
-  password: 'centrocontrol',
-  database: 'centrocontrol',
+  host: process.env.PGHOST || 'localhost',
+  port: Number(process.env.PGPORT) || 5432,
+  user: process.env.PGUSER || 'centrocontrol',
+  password: process.env.PGPASSWORD || 'centrocontrol',
+  database: process.env.PGDATABASE || 'centrocontrol',
 });
+
+const FINTOC_API = 'https://api.fintoc.com/v1';
+
+// Llama directo a la API REST de Fintoc (en vez de usar el SDK oficial),
+// siguiendo la paginación (header "Link") nosotros mismos, con un tope de
+// páginas de seguridad para nunca quedar pegados en un loop infinito.
+async function fintocGetTodasLasPaginas(rutaInicial) {
+  const elementos = [];
+  let siguienteUrl = `${FINTOC_API}${rutaInicial}`;
+  let paginas = 0;
+
+  while (siguienteUrl && paginas < 10) {
+    const respuesta = await fetch(siguienteUrl, {
+      headers: { Authorization: process.env.FINTOC_SECRET_KEY },
+    });
+    if (!respuesta.ok) {
+      throw new Error(`Fintoc respondió ${respuesta.status} al pedir ${siguienteUrl}`);
+    }
+    const datos = await respuesta.json();
+    elementos.push(...datos);
+
+    const linkHeader = respuesta.headers.get('link');
+    const match = linkHeader && linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+    siguienteUrl = match ? match[1] : null;
+    paginas++;
+  }
+
+  return elementos;
+}
 
 async function prepararBaseDeDatos() {
   await pool.query(`
@@ -119,6 +162,10 @@ async function prepararBaseDeDatos() {
   await pool.query(`ALTER TABLE documentos_venta ADD COLUMN IF NOT EXISTS cantidad NUMERIC(12,2);`);
   await pool.query(`ALTER TABLE documentos_venta ADD COLUMN IF NOT EXISTS costo_unitario NUMERIC(14,2);`);
 
+  // Fase 5: columna para no duplicar movimientos al sincronizar con Fintoc
+  // más de una vez (cada movimiento de Fintoc trae un id único, ej. "mov_...").
+  await pool.query(`ALTER TABLE movimientos_bancarios ADD COLUMN IF NOT EXISTS fintoc_id TEXT UNIQUE;`);
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM movimientos_bancarios');
   const yaTieneDatos = Number(rows[0].count) > 0;
 
@@ -156,6 +203,55 @@ function leerCuerpoJSON(peticion) {
     });
     peticion.on('error', reject);
   });
+}
+
+// Trae los movimientos reales (de sandbox, por ahora) desde Fintoc y los
+// guarda en movimientos_bancarios. Fintoc no sabe nada de "centro de costo"
+// —eso es un concepto propio de este proyecto—, así que cada movimiento
+// nuevo entra con centro_costo = 'Sin asignar', pendiente de que alguien lo
+// clasifique a mano (ver /api/movimientos/:id/centro-costo más abajo).
+async function sincronizarConFintoc() {
+  if (!process.env.FINTOC_SECRET_KEY) {
+    throw new Error('Falta FINTOC_SECRET_KEY en app/backend/.env');
+  }
+  if (!process.env.FINTOC_LINK_TOKEN) {
+    throw new Error('Falta FINTOC_LINK_TOKEN en app/backend/.env');
+  }
+
+  const linkToken = process.env.FINTOC_LINK_TOKEN;
+
+  console.log('Fintoc: pidiendo cuentas del Link...');
+  const cuentas = await fintocGetTodasLasPaginas(`/accounts?link_token=${linkToken}`);
+  console.log(`Fintoc: ${cuentas.length} cuenta(s) encontrada(s).`);
+
+  let movimientosNuevos = 0;
+
+  for (const cuenta of cuentas) {
+    console.log(`Fintoc: pidiendo movimientos de la cuenta ${cuenta.id}...`);
+    const movimientos = await fintocGetTodasLasPaginas(
+      `/accounts/${cuenta.id}/movements?link_token=${linkToken}`
+    );
+    console.log(`Fintoc: ${movimientos.length} movimiento(s) encontrado(s) en esa cuenta.`);
+
+    for (const movimiento of movimientos) {
+      const resultado = await pool.query(
+        `INSERT INTO movimientos_bancarios (fecha, glosa, monto, tipo, centro_costo, fintoc_id)
+         VALUES ($1, $2, $3, $4, 'Sin asignar', $5)
+         ON CONFLICT (fintoc_id) DO NOTHING
+         RETURNING id`,
+        [
+          new Date(movimiento.post_date).toISOString().slice(0, 10),
+          movimiento.description,
+          Math.round(movimiento.amount),
+          movimiento.amount >= 0 ? 'abono' : 'cargo',
+          movimiento.id,
+        ]
+      );
+      if (resultado.rows.length > 0) movimientosNuevos++;
+    }
+  }
+
+  return { movimientosNuevos };
 }
 
 function sumarDias(fecha, dias) {
@@ -407,7 +503,7 @@ function construirSelector(centroCostoActual) {
 function construirTablaMovimientos(lista) {
   const filas = lista.map((m) => `
     <tr>
-      <td>${m.fecha.toISOString().slice(0, 10)}</td>
+      <td>${m.fecha}</td>
       <td>${m.glosa}</td>
       <td>${m.monto}</td>
       <td>${m.tipo}</td>
@@ -465,7 +561,7 @@ function construirPaginaVentas(lista, clientes) {
       <td>${v.cliente_nombre}</td>
       <td>${v.tipo_dte}</td>
       <td>${v.monto}</td>
-      <td>${v.fecha_emision.toISOString().slice(0, 10)}</td>
+      <td>${v.fecha_emision}</td>
       <td>${v.centro_costo}</td>
       <td>${v.estado_cobro}</td>
     </tr>
@@ -572,6 +668,37 @@ const servidor = http.createServer(async (peticion, respuesta) => {
     await registrarMovimientoInventario(cuerpo);
     respuesta.writeHead(201, { 'Content-Type': 'application/json' });
     respuesta.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (ruta === '/api/movimientos-bancarios' && peticion.method === 'GET') {
+    const resultado = await pool.query('SELECT * FROM movimientos_bancarios ORDER BY fecha DESC, id DESC');
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows));
+    return;
+  }
+
+  if (ruta === '/api/sincronizar-fintoc' && peticion.method === 'POST') {
+    try {
+      const resultado = await sincronizarConFintoc();
+      respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+      respuesta.end(JSON.stringify(resultado));
+    } catch (error) {
+      respuesta.writeHead(500, { 'Content-Type': 'application/json' });
+      respuesta.end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+
+  const matchCentroCosto = ruta.match(/^\/api\/movimientos\/(\d+)\/centro-costo$/);
+  if (matchCentroCosto && peticion.method === 'POST') {
+    const cuerpo = await leerCuerpoJSON(peticion);
+    const resultado = await pool.query(
+      'UPDATE movimientos_bancarios SET centro_costo = $1 WHERE id = $2 RETURNING *',
+      [cuerpo.centroCosto, matchCentroCosto[1]]
+    );
+    respuesta.writeHead(200, { 'Content-Type': 'application/json' });
+    respuesta.end(JSON.stringify(resultado.rows[0]));
     return;
   }
 

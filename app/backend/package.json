@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "dotenv": "^17.4.2",
+    "fintoc": "^1.26.0",
     "pg": "^8.22.0"
   }
 }
